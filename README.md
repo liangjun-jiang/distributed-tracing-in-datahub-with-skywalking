@@ -4,7 +4,7 @@
 ## About Datahub
 LinkedIn's open source project [Datahub](https://linkedin.github.io/datahub/) is a gneeralized metadata search & discovery tool. It has been gaining popularity lately. 
 It has very nice architecture to support not only bring in metadata into this tool via event-driven approach, but also support metadata discovery and search in a restful way. 
-![datahub architecture](https://github.com/linkedin/datahub/blob/master/docs/imgs/datahub-architecture.svg)
+![datahub architecture](./screenshots/datahub-architecture.svg)
 As a summary, to use Datahub, you will use the following services. One type of service is that developed services, which consists of 
 1. Datahub Frontend
 2. GMS (Generalized Metadata Service) - think this as the main backend service
@@ -18,7 +18,7 @@ The other type service is leveraged services
 4. Message Broker (Kafka and its related services such as Kafka, Schema Registry, Schema Registry UI) but it will be only one container. 
 
 To get Datahub up and running, you will at least get those 8 services working. 
-> If you have not tried Datahub, don't be scared. Datahub does provide `[quickstart.sh](https://github.com/linkedin/datahub/blob/master/docker/quickstart.sh)` to make the process easier. 
+> If you have not tried Datahub, don't be scared. Datahub does provide [quickstart.sh](https://github.com/linkedin/datahub/blob/master/docker/quickstart.sh) to make the process easier. 
 
 While deploy them into a production environment, or at least for your trial & error experiment, you might want to understand a little bit more about the peformance of Datahub.  
 
@@ -29,7 +29,7 @@ Why not [OpenTracing](https://opentracing.io/)? [Jaeger](https://www.jaegertraci
 
 There are two things that affected my decision while I research this topic, also combining my experience with distributed tracking while working for Alibaba.
 1. this Medium Article: [Distributed Tracing — we’ve been doing it wrong](https://medium.com/@copyconstruct/distributed-tracing-weve-been-doing-it-wrong-39fc92a857df)
-2. The creator of SkyWalking, [Shen Wu](https://github.com/wu-sheng)'s talk: [Apache Skywalking, with Sheng Wu](https://www.youtube.com/watch?v=5dnNVz45jrA), and [this in Chinese](https://www.bilibili.com/video/BV1qV41167tj)
+2. The creator of SkyWalking, [Shen Wu](https://github.com/wu-sheng)'s talk: [Apache Skywalking, with Sheng Wu](https://www.youtube.com/watch?v=5dnNVz45jrA), and [this one in Chinese](https://www.bilibili.com/video/BV1qV41167tj)
 
 There maybe  one reason for you to use Apache Skywalking - **it doesn't change single piece of your project to get it working with your project**.
 
@@ -49,22 +49,48 @@ Once you download, you should follow the REAME.md to untar the binary, make a si
 agent.service_name=${SW_AGENT_NAME:datahub}
 ```
 
+**As a side note, I do find there are some issues while running Datahub modules with Skywalking agent enabled if I choose Skywalking's default configuration. I have to enable the following as well to make it working:**
+
+```
+# If true, SkyWalking agent will save all instrumented classes files in `/debugging` folder.
+# SkyWalking team may ask for these files in order to resolve compatible problem.
+agent.is_open_debugging_class = ${SW_AGENT_OPEN_DEBUG:true}
+
+# If true, SkyWalking agent will cache all instrumented classes files to memory or disk files (decided by class cache mode),
+# allow other javaagent to enhance those classes that enhanced by SkyWalking agent.
+agent.is_cache_enhanced_class = ${SW_AGENT_CACHE_CLASS:true}
+
+# The instrumented classes cache mode: MEMORY or FILE
+# MEMORY: cache class bytes to memory, if instrumented classes is too many or too large, it may take up more memory
+# FILE: cache class bytes in `/class-cache` folder, automatically clean up cached class files when the application exits
+agent.class_cache_mode = ${SW_AGENT_CLASS_CACHE_MODE:MEMORY}
+```
+
 ## Set up for Local Environment
 In the following, we will discuss how to set up a local running LinkedIn's Datahub and a Skywalking backend and UI services. We will start measuring Datahub's performance with running the jars files of Datahub's service modules.  
 
 ### Set up LinkedIn's Datahub
-Even though LinkedIn's `[quickstart.sh](https://github.com/linkedin/datahub/blob/master/docker/quickstart.sh)` will help you spin up each service listed above. But right now, we actually just want to start with MySQL, ES, Neo4j and Kafka and Kafka related services (Zookeeper, Schema Registry, Schema Registry UI, etc).
+Even though LinkedIn's [quickstart.sh](https://github.com/linkedin/datahub/blob/master/docker/quickstart.sh) will help you spin up each service listed above. But right now, we actually just want to start with MySQL, ES, Neo4j and Kafka and Kafka related services (Zookeeper, Schema Registry, Schema Registry UI, etc).
 
 #### Run Docker container of MySQL, ES, Neo4j and Kafka
 I do believe that Datahub is making it harder to run those services, compared to before. You can use [this](https://github.com/linkedin/datahub/blob/master/docs/docker/development.md) as a reference to understand the recommended way by them. 
-> LinkedIn's datahub is trying to give some flexibity for adapters not to limit to the default technology stack. I guess Flexbility alwyas comes with complexity. 
+LinkedIn's datahub is trying to give some flexibity for adapters not to limit to the default technology stack. I guess Flexbility alwyas comes with complexity. 
 For this reason, I have included a `docker-compose` file: `docker-compose-mysql-es-neo4j-kafka.yml`. You run it in this way
+> Keep in mind, you should run it under this project root, and you need to change the `init.sql` location in Line 17
+
 ```
 docker-compose -f docker-compose-mysql-es-neo4j-kafka.yml up
 ```
 
+There is a little extra work you need to do, create entity index manually. Move to `datahub/docker/elasticsearch-setup`
+```
+curl -XPUT http://localhost:9200/corpuserinfodocument  -H 'Content-Type: application/json' --data @corpuser-index-config.json && \
+    curl -XPUT http://localhost:9200/dataprocessdocument  -H 'Content-Type: application/json' --data @dataprocess-index-config.json && \
+    curl -XPUT http://localhost:9200/datasetdocument  -H 'Content-Type: application/json' --data @dataset-index-config.json
+```
 
-#### Run `GMS`, `mce-consumer-job` and `mae-consumer-job` on our own 
+
+#### Run `GMS`, `mce-consumer-job` and `mae-consumer-job` locally 
 > Not that hard, I promise. 
 > I definitely made assumption that you are a develper and comfortable with Java development. 
 
@@ -145,10 +171,10 @@ Also you run the following to get it going
 
 ```
 docker-compose -f docker-compose-skywalking-oap-ui.yml up
-
 ```
 
-### Start the measure
+
+### Start the application performance measurement 
 You can start the `gms`, `mce-consumer-job` and `mae-consumer-job` with Skywalking Java agent in the following way
 1. Start up `gms`
 `gms` is a Spring application. It works with `jetty-runner`. Let's download the `jetty-runner`, and put it with `war.war` file of `gms`. Assumed you are in the `gms`' `war.war` directory
@@ -171,9 +197,51 @@ java -javaagent:/YOUR-SKYWALKING-AGENT-DOWNLOAD-PATH/apache-skywalking-apm-bin/a
 java -javaagent:/YOUR-SKYWALKING-AGENT-DOWNLOAD-PATH/apache-skywalking-apm-bin/agent/skywalking-agent.jar -jar ./mae-consumer-job.jar
 ```
 
+4. Run some API requests
+There are some sample `cUrl` commands to create `dataset`, `corpuser`, `corpgroup`, `get a user` etc if you can find them in the [gms module documentation](https://github.com/linkedin/datahub/tree/master/gms).
+
+If you are a fan of [postman](https://www.postman.com/). I also added a postman json file for your convenience. Start making requests. More, better
+
+Keep in mind, it will take at least 3-5 mins that you can see some result at Skywalking UI http://localhost:8090
+
+
+
+## Understand the Skywalking UI
+1. My favorite starting point is from Topology
+![topology-1](./screenshots/topology-1.png)
+2. Click the datahub service, you can get some details 
+![topology](./screenshots/topology.png)
+3. Click each buttons to get some information such as endpoints and tracers
+![endpoint](./screenshots/endpoint-load.png)
+4. For sure, you can start from global view
+![global](./screenshots/global.png)
+5. or you can look at service
+![service](./screenshots/service.png)
+6. or more
+![more 1](./screenshots/instance-3.png)
+
+7. endpoint can be shown in table, list and tree view
+    * Table view
+![endpoint table](./screenshots/endpoint-table.png)
+    * List view
+![endpoint list](./screenshots/endpoint-list.png)
+
+    * Tree view
+![endpoint tree](./screenshots/endpoint-tree.png)
+
+I leave you to interpret the numbers shown on each screenshot.
+
+Skywalking also provides features such as profile and alarm. I leave you to explore.
 
 
 ## Set up for Docker Images
+Set up Apache Skywalking Java agent with the module's docker image of Datahub is pretty similar to steps above. We briefly use `gms` [Dockerfile](https://github.com/linkedin/datahub/blob/master/docker/datahub-gms/Dockerfile) as an example
 
+In line [#8](https://github.com/linkedin/datahub/blob/master/docker/datahub-gms/Dockerfile), let's add downloading Skywalking Java agent and untar it. 
 
-## Understand the Metrics
+In [start.sh](https://github.com/linkedin/datahub/blob/master/docker/datahub-gms/start.sh), we need to work on modifying Skywalking's config file a little bit.
+
+In [line #9 of start.sh](https://github.com/linkedin/datahub/blob/master/docker/datahub-gms/start.sh), we changed it to
+```
+java -javaagent:/YOUR-SKYWALKING-AGENT-DOWNLOAD-PATH/apache-skywalking-apm-bin/agent/skywalking-agent.jar -jar ./jetty-runner.jar ./war.war
+```

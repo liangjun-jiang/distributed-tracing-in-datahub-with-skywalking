@@ -4,7 +4,7 @@
       mysql:
         container_name: mysql
         hostname: mysql
-        image: mysql:latest
+        image: mysql:5.7
         restart: always
         environment:
           MYSQL_DATABASE: 'datahub'
@@ -14,7 +14,7 @@
         ports:
           - "3306:3306"
         volumes:
-          - ../mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+          - /DATAHUB-ROOT/docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
     
       zookeeper:
         image: confluentinc/cp-zookeeper:5.2.1
@@ -92,7 +92,7 @@
           - schema-registry
     
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:7.3.2
+        image: docker.elastic.co/elasticsearch/elasticsearch:6.8.6
         container_name: elasticsearch
         hostname: elasticsearch
         ports:
@@ -103,7 +103,7 @@
           - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
     
       kibana:
-        image: docker.elastic.co/kibana/kibana:7.3.2
+        image: docker.elastic.co/kibana/kibana:6.8.6
         container_name: kibana
         hostname: kibana
         ports:
@@ -122,17 +122,17 @@
           - "7687:7687"
     
       # This "container" is a workaround to pre-create search indices
-      elasticsearch-setup:
-        build:
-          context: ../elasticsearch
-        hostname: elasticsearch-setup
-        container_name: elasticsearch-setup
-        depends_on:
-          - elasticsearch
-        environment:
-          - ELASTICSEARCH_HOST=elasticsearch
-          - ELASTICSEARCH_PORT=9200
+    #   elasticsearch-setup:
+    #     build:
+    #       context: .
+    #     hostname: elasticsearch-setup
+    #     container_name: elasticsearch-setup
+    #     depends_on:
+    #       - elasticsearch
+    #     environment:
+    #       - ELASTICSEARCH_HOST=elasticsearch
+    #       - ELASTICSEARCH_PORT=9200
 
-networks:
-    default:
-        name: datahub_network
+    networks:
+        default:
+            name: datahub_network
