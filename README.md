@@ -50,10 +50,12 @@ agent.service_name=${SW_AGENT_NAME:datahub}
 ```
 
 ## Set up for Local Environment
-### Set up LinkedIn's Datahub
-Even though LinkedIn's `[quickstart.sh](https://github.com/linkedin/datahub/blob/master/docker/quickstart.sh)` will help you spin up each service listed above. But right now, we actually just want to start with MySQL, ES, Neo4j and Kafka.
+In the following, we will discuss how to set up a local running LinkedIn's Datahub and a Skywalking backend and UI services. We will start measuring Datahub's performance with running the jars files of Datahub's service modules.  
 
-# Run Docker container of MySQL, ES, Neo4j and Kafka
+### Set up LinkedIn's Datahub
+Even though LinkedIn's `[quickstart.sh](https://github.com/linkedin/datahub/blob/master/docker/quickstart.sh)` will help you spin up each service listed above. But right now, we actually just want to start with MySQL, ES, Neo4j and Kafka and Kafka related services (Zookeeper, Schema Registry, Schema Registry UI, etc).
+
+#### Run Docker container of MySQL, ES, Neo4j and Kafka
 I do believe that Datahub is making it harder to run those services, compared to before. You can use [this](https://github.com/linkedin/datahub/blob/master/docs/docker/development.md) as a reference to understand the recommended way by them. 
 > LinkedIn's datahub is trying to give some flexibity for adapters not to limit to the default technology stack. I guess Flexbility alwyas comes with complexity. 
 For this reason, I have included a `docker-compose` file: `docker-compose-mysql-es-neo4j-kafka.yml`. You run it in this way
@@ -62,7 +64,7 @@ docker-compose -f docker-compose-mysql-es-neo4j-kafka.yml up
 ```
 
 
-# Run `GMS`, `mce-consumer-job` and `mae-consumer-job` on our own 
+#### Run `GMS`, `mce-consumer-job` and `mae-consumer-job` on our own 
 > Not that hard, I promise. 
 > I definitely made assumption that you are a develper and comfortable with Java development. 
 
@@ -93,38 +95,8 @@ Also I have to change the skywalking UI's port to 8090 to avoid the conflict wit
 An sample modifide docker-compose.yml might look like, and you run it
 
 ```
-docker-compose -f docker-compose-skywalking-oap-ui.yml up
-```
-
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 version: '3.8'
 services:
-  # elasticsearch:
-  #   image: docker.elastic.co/elasticsearch/elasticsearch:6.8.6
-  #   container_name: elasticsearch
-  #   restart: always
-  #   ports:
-  #     - 9200:9200
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 3
-  #     start_period: 40s
-  #   environment:
-  #     - discovery.type=single-node
-  #     - bootstrap.memory_lock=true
-  #     - "ES_JAVA_OPTS=-Xms4096m -Xmx4096m"
-  #     - thread_pool.write.queue_size=1000
-  #     - thread_pool.index.queue_size=1000
-  #   ulimits:
-  #     memlock:
-  #       soft: -1
-  #       hard: -1
-  #   volumes:
-  #     - data:/usr/share/elasticsearch/data
   oap:
     image: apache/skywalking-oap-server:8.1.0-es6
     container_name: oap
@@ -168,7 +140,38 @@ networks:
     name: datahub_network  
 
 ```
- 
+
+Also you run the following to get it going
+
+```
+docker-compose -f docker-compose-skywalking-oap-ui.yml up
+
+```
+
+### Start the measure
+You can start the `gms`, `mce-consumer-job` and `mae-consumer-job` with Skywalking Java agent in the following way
+1. Start up `gms`
+`gms` is a Spring application. It works with `jetty-runner`. Let's download the `jetty-runner`, and put it with `war.war` file of `gms`. Assumed you are in the `gms`' `war.war` directory
+
+```
+curl https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-runner/9.4.20.v20190813/jetty-runner-9.4.20.v20190813.jar --output jetty-runner.jar
+```
+
+```
+java -javaagent:/YOUR-SKYWALKING-AGENT-DOWNLOAD-PATH/apache-skywalking-apm-bin/agent/skywalking-agent.jar -jar ./jetty-runner.jar ./war.war  
+```
+
+2. Start up `mce-consumer-job`
+```
+java -javaagent:/YOUR-SKYWALKING-AGENT-DOWNLOAD-PATH/apache-skywalking-apm-bin/agent/skywalking-agent.jar -jar ./mce-consumer-job.jar
+```
+
+3. Start up `mae-consumer-job`
+```
+java -javaagent:/YOUR-SKYWALKING-AGENT-DOWNLOAD-PATH/apache-skywalking-apm-bin/agent/skywalking-agent.jar -jar ./mae-consumer-job.jar
+```
+
+
 
 ## Set up for Docker Images
 
