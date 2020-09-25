@@ -1,8 +1,10 @@
 # Applicaiton Performance Monitor and Distrubted Tracing with Apache SkyWalking in Datahub 
 
 
+In this article, I share my experience about setting up application performance monitor and dsitrubuted tracking tool: Apache Skywalking in Datahub. It probabaly gets boring if you don't really want to give it a try right now. In that case you can just skip to the last part to look at some screenshots.
+
 ## About Datahub
-LinkedIn's open source project [Datahub](https://linkedin.github.io/datahub/) is a gneeralized metadata search & discovery tool. It has been gaining popularity lately. 
+LinkedIn's open source project [Datahub](https://linkedin.github.io/datahub/) is a generalized metadata search & discovery tool. It has been gaining popularity lately. 
 It has very nice architecture to support not only bring in metadata into this tool via event-driven approach, but also support metadata discovery and search in a restful way. 
 ![datahub architecture](./screenshots/datahub-architecture.svg)
 As a summary, to use Datahub, you will use the following services. One type of service is that developed services, which consists of 
